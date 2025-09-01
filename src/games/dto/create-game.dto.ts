@@ -1,31 +1,25 @@
-import { IsArray, IsEnum, IsInt, IsNotEmpty, IsObject, IsOptional, IsString, Min } from "class-validator";
+import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export enum GameState {
   WAITING = 'waiting',
   IN_PROGRESS = 'in_progress',
-  FINISHED = 'finished'
+  FINISHED = 'finished',
 }
 
 export class CreateGameDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
 
-@IsString()
-@IsNotEmpty()
-name: string;
+  @IsInt()
+  @Min(2)
+  maxPlayers: number;
 
-@IsInt()
-@Min(2)
-maxPlayers: number;
+  @IsString()
+  @IsOptional()
+  playerName?: string;
 
-@IsString()
-@IsOptional()
-playerName?: string;
-
-@IsEnum(GameState)
-@IsOptional()
-state?: GameState;
-
-@IsObject()
-@IsOptional()
-score?: Record<string, number>
-
+  @IsEnum(GameState)
+  @IsOptional()
+  state?: GameState;
 }

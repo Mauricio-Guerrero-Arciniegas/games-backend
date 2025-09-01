@@ -4,10 +4,11 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { CreateGameDto, GameState } from './dto/create-game.dto';
-import { UpdateGameDto } from './dto/update-game.dto';
-import { Game } from './entities/game.entity';
 import { InjectModel } from '@nestjs/sequelize';
+import { Game } from './entities/game.entity';
+import { CreateGameDto, GameState } from './dto/create-game.dto';
+import { JoinGameDto } from './dto/join-game.dto';
+import { EndGameDto } from './dto/end-game.dto';
 
 @Injectable()
 export class GamesService {
@@ -23,10 +24,10 @@ export class GamesService {
 
     try {
       const newGame = await this.gameModel.create({
-        name: name,
-        maxPlayers: maxPlayers,
-        players: [playerName],
-        state: state || 'waiting',
+        name,
+        maxPlayers,
+        players: playerName ? [playerName] : [],
+        state: state || GameState.WAITING,
         score: null,
       });
 
@@ -37,11 +38,7 @@ export class GamesService {
   }
 
   async findOne(id: number) {
-    const game = await this.gameModel.findOne({
-      where: {
-        id: id,
-      },
-    });
+    const game = await this.gameModel.findOne({ where: { id } });
 
     if (!game) {
       throw new BadRequestException(`Game with id: ${id} not found`);
@@ -50,28 +47,22 @@ export class GamesService {
     return game;
   }
 
-  async joinGame(id: number, updateGameDto: UpdateGameDto) {
-    const { playerName } = updateGameDto;
-
+  async joinGame(id: number, { playerName }: JoinGameDto) {
     const game = await this.findOne(id);
 
-    if (game.dataValues.players.includes(playerName!)) {
+    if (game.dataValues.players.includes(playerName)) {
       throw new BadRequestException('The player has already joined!');
     }
 
     const newPlayers = [...game.dataValues.players, playerName];
 
     if (newPlayers.length > game.dataValues.maxPlayers) {
-      throw new BadRequestException('The game is full !');
+      throw new BadRequestException('The game is full!');
     }
 
     try {
-      await game.update({
-        players: newPlayers,
-      });
-      return {
-        message: 'Joined success!',
-      };
+      await game.update({ players: newPlayers });
+      return { message: 'Joined success!' };
     } catch (error) {
       this.handleDBException(error);
     }
@@ -81,40 +72,34 @@ export class GamesService {
     const game = await this.findOne(id);
 
     try {
-      await game.update({
-        state: GameState.IN_PROGRESS,
-      });
-      return {
-        message: 'The game has been started',
-      };
+      await game.update({ state: GameState.IN_PROGRESS });
+      return { message: 'The game has been started' };
     } catch (error) {
       this.handleDBException(error);
     }
   }
 
-  async endGame(id: number, updateGameDto: UpdateGameDto){
+  async endGame(id: number, { score }: EndGameDto) {
     const game = await this.findOne(id);
 
     try {
       await game.update({
-        score: updateGameDto.score,
+        score,
         state: GameState.FINISHED,
-      })
+      });
 
-      return {
-        message:'Game finished',
-      }
+      return { message: 'Game finished' };
     } catch (error) {
       this.handleDBException(error);
     }
   }
 
   private handleDBException(error: any) {
-    if (error.parent.code === '23505') {
+    if (error?.parent?.code === '23505') {
       throw new BadRequestException(error.parent.detail);
     }
 
     this.logger.error(error);
-    throw new InternalServerErrorException('Something went very grong!');
+    throw new InternalServerErrorException('Something went very wrong!');
   }
 }
