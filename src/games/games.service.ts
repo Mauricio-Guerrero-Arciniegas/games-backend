@@ -47,6 +47,10 @@ export class GamesService {
     return game;
   }
 
+  findAll() {
+  return this.gameModel.findAll();
+}
+
   async joinGame(id: number, { playerName }: JoinGameDto) {
     const game = await this.findOne(id);
 
