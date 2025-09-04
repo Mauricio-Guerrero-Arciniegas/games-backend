@@ -43,7 +43,6 @@ export class GamesService {
     if (!game) {
       throw new BadRequestException(`Game with id: ${id} not found`);
     }
-
     return game;
   }
 
@@ -91,7 +90,6 @@ export class GamesService {
         score,
         state: GameState.FINISHED,
       });
-
       return { message: 'Game finished' };
     } catch (error) {
       this.handleDBException(error);
