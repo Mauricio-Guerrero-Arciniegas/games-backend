@@ -1,6 +1,6 @@
-import { IsNumber } from 'class-validator';
+import { IsObject } from 'class-validator';
 
 export class EndGameDto {
-  @IsNumber()
-  score: number;
+  @IsObject()
+  score: Record<string, number>;
 }
