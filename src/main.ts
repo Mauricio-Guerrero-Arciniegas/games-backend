@@ -12,8 +12,8 @@ async function bootstrap() {
   // Validaciones globales
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,            // elimina propiedades no incluidas en los DTO
-      forbidNonWhitelisted: true, // lanza error si hay propiedades extra
+      whitelist: true,            
+      forbidNonWhitelisted: true, 
     }),
   );
 
@@ -27,7 +27,7 @@ async function bootstrap() {
     credentials: true, // si necesitas enviar cookies o auth
   });
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3001;
   await app.listen(port);
   console.log(`Backend escuchando en puerto ${port}`);
 }
