@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Game } from './entities/game.entity';
@@ -104,4 +105,12 @@ export class GamesService {
     this.logger.error(error);
     throw new InternalServerErrorException('Something went very wrong!');
   }
+
+  // games.service.ts
+async remove(id: number) {
+  const game = await this.gameModel.findByPk(id);
+  if (!game) throw new NotFoundException('Game not found');
+  await game.destroy();
+  return { message: 'Game deleted successfully' };
+}
 }
