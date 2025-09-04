@@ -27,7 +27,6 @@ async function bootstrap() {
     credentials: true, // si necesitas enviar cookies o auth
   });
 
-  // Puerto dinámico según Railway o fallback
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Backend escuchando en puerto ${port}`);
