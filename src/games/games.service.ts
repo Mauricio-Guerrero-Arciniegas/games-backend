@@ -106,7 +106,6 @@ export class GamesService {
     throw new InternalServerErrorException('Something went very wrong!');
   }
 
-  // games.service.ts
 async remove(id: number) {
   const game = await this.gameModel.findByPk(id);
   if (!game) throw new NotFoundException('Game not found');
