@@ -13,8 +13,6 @@ import { CreateGameDto, GameState } from './dto/create-game.dto';
 import { JoinGameDto } from './dto/join-game.dto';
 import { EndGameDto } from './dto/end-game.dto';
 import { User } from 'src/users/entities/user.entity';
-import { max } from 'class-validator';
-import { UpdateGameDto } from './dto/update-game.dto';
 
 @Injectable()
 export class GamesService {
@@ -71,31 +69,71 @@ export class GamesService {
     return game;
   }
 
-  findAll() {
-  return this.gameModel.findAll();
+ async findAll(status?: string) {
+  const where = status ? { state: status } : {};
+
+  return this.gameModel.findAll({
+    where,
+    include: [
+      {
+        model: User,
+        as: 'players',
+        attributes: ['id', 'fullname', 'email'],
+        through: { attributes: [] }, 
+      },
+    ],
+  });
 }
 
   async joinGame(gameId: number, joinGameDto: JoinGameDto) {
-    const { userId } = joinGameDto
+  const { userId } = joinGameDto;
 
-    if (!userId)
-      throw new BadRequestException('userId is required to join a game');
+  if (!userId) {
+    throw new BadRequestException('userId is required to join a game');
+  }
 
-    const game = await this.findOne(gameId)
-    if (game.dataValues.state !== GameState.WAITING) 
-      throw new BadRequestException('Game is not joinable');
+  const game = await this.findOne(gameId);
 
-    const user = await this.userService.findOne(userId);
+  if (game.state !== GameState.WAITING) {
+    throw new BadRequestException('Cannot join a game that is not in WAITING state');
+  }
 
-    const alreadyJoined = game.dataValues.players.find((player) => player.id === userId)
-    if (alreadyJoined) throw new BadRequestException('User already joined the game');
+  const user = await this.userService.findOne(userId);
 
-    if(game.dataValues.players.length >= game.dataValues.maxPlayers) throw new BadRequestException('Game is full');
+  const alreadyJoined = game.players.find((player) => player.id === userId);
+  if (alreadyJoined) {
+    throw new BadRequestException('User already joined this game');
+  }
+
+  const userGames = await this.gameModel.findAll({
+    include: [
+      {
+        model: User,
+        as: 'players',
+        where: { id: userId },
+        through: { attributes: [] },
+      },
+    ],
+  });
+
+  const activeGame = userGames.find(
+    (g) => g.state === GameState.WAITING || g.state === GameState.IN_PROGRESS,
+  );
+
+  if (activeGame) {
+    throw new BadRequestException(
+      `User is already in another active game (${activeGame.name})`,
+    );
+  }
+
+  if (game.players.length >= game.maxPlayers) {
+    throw new BadRequestException('Game is full');
+  }
 
   await game.$add('players', user);
 
   return {
-    message: `User ${user.dataValues.fullname} has joined the game ${game.dataValues.name}`,
+    message: `User ${user.fullname} has joined the game ${game.name}`,
   };
 }
 

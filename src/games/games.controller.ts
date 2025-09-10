@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { GamesService } from './games.service';
 import { CreateGameDto } from './dto/create-game.dto';
 import { JoinGameDto } from './dto/join-game.dto';
@@ -18,9 +18,9 @@ export class GamesController {
     return this.gamesService.findOne(+id);
   }
 
-  @Get()
-  findAll() {
-    return this.gamesService.findAll();
+   @Get()
+  findAll(@Query('status') status?: string) {
+    return this.gamesService.findAll(status);
   }
 
   @Patch(':id/join')
