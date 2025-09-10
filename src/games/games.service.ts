@@ -1,3 +1,5 @@
+import { UsersService } from './../users/users.service';
+
 import {
   BadRequestException,
   Injectable,
@@ -10,6 +12,9 @@ import { Game } from './entities/game.entity';
 import { CreateGameDto, GameState } from './dto/create-game.dto';
 import { JoinGameDto } from './dto/join-game.dto';
 import { EndGameDto } from './dto/end-game.dto';
+import { User } from 'src/users/entities/user.entity';
+import { max } from 'class-validator';
+import { UpdateGameDto } from './dto/update-game.dto';
 
 @Injectable()
 export class GamesService {
@@ -18,19 +23,24 @@ export class GamesService {
   constructor(
     @InjectModel(Game)
     private gameModel: typeof Game,
+    private readonly userService: UsersService,
   ) {}
 
   async create(createGameDto: CreateGameDto) {
-    const { name, maxPlayers, playerName, state } = createGameDto;
+    const { name, maxPlayers, userId, state } = createGameDto;
 
     try {
       const newGame = await this.gameModel.create({
-        name,
-        maxPlayers,
-        players: playerName ? [playerName] : [],
-        state: state || GameState.WAITING,
+        name: name,
+        maxPlayers: maxPlayers,
+        state: state || 'waiting',
         score: null,
-      });
+      })
+
+      if (userId) {
+        const user = await this.userService.findOne(userId);
+        await newGame.$add('players', user);
+      }
 
       return newGame;
     } catch (error) {
@@ -39,7 +49,21 @@ export class GamesService {
   }
 
   async findOne(id: number) {
-    const game = await this.gameModel.findOne({ where: { id } });
+    const game = await this.gameModel.findOne({ 
+      where: {
+         id: id, 
+        },
+        include: [
+          {
+            model: User,
+            as: 'players',
+            attributes: ['id', 'fullname', 'email'] ,
+            through: {
+              attributes: [],
+            }
+          }
+        ],
+      });
 
     if (!game) {
       throw new BadRequestException(`Game with id: ${id} not found`);
@@ -51,26 +75,30 @@ export class GamesService {
   return this.gameModel.findAll();
 }
 
-  async joinGame(id: number, { playerName }: JoinGameDto) {
-    const game = await this.findOne(id);
+  async joinGame(gameId: number, joinGameDto: JoinGameDto) {
+    const { userId } = joinGameDto
 
-    if (game.dataValues.players.includes(playerName)) {
-      throw new BadRequestException('The player has already joined!');
-    }
+    if (!userId)
+      throw new BadRequestException('userId is required to join a game');
 
-    const newPlayers = [...game.dataValues.players, playerName];
+    const game = await this.findOne(gameId)
+    if (game.dataValues.state !== GameState.WAITING) 
+      throw new BadRequestException('Game is not joinable');
 
-    if (newPlayers.length > game.dataValues.maxPlayers) {
-      throw new BadRequestException('The game is full!');
-    }
+    const user = await this.userService.findOne(userId);
 
-    try {
-      await game.update({ players: newPlayers });
-      return { message: 'Joined success!' };
-    } catch (error) {
-      this.handleDBException(error);
-    }
-  }
+    const alreadyJoined = game.dataValues.players.find((player) => player.id === userId)
+    if (alreadyJoined) throw new BadRequestException('User already joined the game');
+
+    if(game.dataValues.players.length >= game.dataValues.maxPlayers) throw new BadRequestException('Game is full');
+
+  await game.$add('players', user);
+
+  return {
+    message: `User ${user.dataValues.fullname} has joined the game ${game.dataValues.name}`,
+  };
+}
+
 
   async startGame(id: number) {
     const game = await this.findOne(id);

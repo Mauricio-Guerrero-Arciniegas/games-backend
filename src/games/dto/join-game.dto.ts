@@ -1,7 +1,7 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber } from 'class-validator';
 
 export class JoinGameDto {
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  playerName: string;
+  userId: number;
 }

@@ -23,7 +23,7 @@ export class GamesController {
     return this.gamesService.findAll();
   }
 
-  @Post(':id/join')
+  @Patch(':id/join')
   joinGame(@Param('id') id: string, @Body() joinGameDto: JoinGameDto) {
     return this.gamesService.joinGame(+id, joinGameDto);
   }
