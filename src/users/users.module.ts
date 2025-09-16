@@ -5,11 +5,17 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from './entities/user.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   controllers: [UsersController],
-  providers: [UsersService],
-  imports: [ConfigModule,SequelizeModule.forFeature([User]),JwtModule.registerAsync({
+  providers: [UsersService, JwtStrategy],
+  imports: [
+    ConfigModule,
+    SequelizeModule.forFeature([User]),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    JwtModule.registerAsync({
     imports: [ConfigModule],
     inject: [ConfigService],
     useFactory: (configService: ConfigService) => ({
@@ -20,6 +26,6 @@ import { JwtModule } from '@nestjs/jwt';
     }),
   })
   ],
-  exports: [SequelizeModule, UsersService],
+  exports: [SequelizeModule, UsersService, PassportModule, JwtModule, JwtStrategy],
 })
 export class UsersModule {}

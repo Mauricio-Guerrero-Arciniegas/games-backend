@@ -3,6 +3,7 @@ import { GamesService } from './games.service';
 import { CreateGameDto } from './dto/create-game.dto';
 import { JoinGameDto } from './dto/join-game.dto';
 import { EndGameDto } from './dto/end-game.dto';
+import { Auth } from 'src/users/decorators/auth.decorator';
 
 @Controller('games')
 export class GamesController {
@@ -14,11 +15,13 @@ export class GamesController {
   }
 
   @Get(':id')
+  @Auth()
   findOne(@Param('id') id: string) {
     return this.gamesService.findOne(+id);
   }
 
    @Get()
+   @Auth()
   findAll(@Query('status') status?: string) {
     return this.gamesService.findAll(status);
   }

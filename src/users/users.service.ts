@@ -58,7 +58,7 @@ export class UsersService {
       throw new UnauthorizedException('Invalid Credentials');
     }
 
-    if(bcrypt.compareSync(password, user.dataValues.password)) {
+    if(!bcrypt.compareSync(password, user.dataValues.password)) {
       throw new UnauthorizedException('Invalid Credentials')
   }
   return {
